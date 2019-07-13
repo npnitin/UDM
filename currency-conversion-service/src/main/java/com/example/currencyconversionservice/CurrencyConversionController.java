@@ -1,6 +1,7 @@
 package com.example.currencyconversionservice;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cloud.client.loadbalancer.LoadBalancerClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -18,10 +19,15 @@ public class CurrencyConversionController {
     @Autowired
     CurrencyExchnageServiceProxy currencyExchnageServiceProxy;
 
+    @Autowired
+    LoadBalancerClient loadBalancerClient;
+
     @GetMapping("/currency-converter/from/{from}/to/{to}/quantity/{quantity}")
     public CurrenyConversionBean convertCurrency(@PathVariable String from,@PathVariable String to,@PathVariable int quantity){
 
-        ExchangeValue exchangeValue =  getRestTemplate().getForObject("http://localhost:8000/currency-exchange/from/"+from+"/to/"+to,ExchangeValue.class);
+        String url = loadBalancerClient.choose("currency-exchange-service").getUri().toString();
+        System.out.println("server is:"+url);
+        ExchangeValue exchangeValue =  getRestTemplate().getForObject(url+"/currency-exchange/from/"+from+"/to/"+to,ExchangeValue.class);
 
         return new CurrenyConversionBean(1,from,to,exchangeValue.getConversionMultiple(),quantity,exchangeValue.getConversionMultiple()*quantity);
     }
